@@ -36,6 +36,12 @@
         <tr>
             <td>{{product.name}}</td>
             <td>{{product.price}}</td>
+            {% if product.image %}
+            <td>
+                <img src="{{product.image.url}}" alt="connect" style="max-height:300px">
+
+            </td>
+            {% endif %}
             <td>{{product.description}}</td>
             <td>{{product.date_added}}</td>
 			<td>
@@ -55,7 +61,7 @@
 </table>
 
 
-<table id="product_table"></table>
+<!-- <table id="product_table"></table> -->
 
 
 

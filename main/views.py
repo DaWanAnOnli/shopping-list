@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 from main.forms import ProductForm
 from django.urls import reverse
 from main.models import Product
@@ -12,9 +12,9 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 import datetime
-from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+import json
 
 @login_required(login_url='/login')
 def show_main(request):
@@ -31,15 +31,19 @@ def show_main(request):
     
     
 def create_product(request):
-    form = ProductForm(request.POST or None)
+    form = ProductForm()
 
     
-    if form.is_valid() and request.method == "POST":
+    if request.method == "POST":
+        form = ProductForm(request.POST, request.FILES)
         product = form.save(commit=False)
         product.user = request.user
         product.save()
+        print(f"{form = }\n{request.POST = }\n{request.FILES = }")
         return HttpResponseRedirect(reverse('main:show_main'))
-        
+    
+
+    print(f"{form = }\n{request.POST = }\n{request.FILES = }")
     context = {'form': form}
     return render(request, "create_product.html", context)
 
@@ -117,7 +121,7 @@ def delete_product(request, id):
     return HttpResponseRedirect(reverse('main:show_main'))
     
 def get_product_json(request):
-    product_item = Product.objects.all()
+    product_item = Product.objects.filter(user=request.user)
     return HttpResponse(serializers.serialize('json', product_item))
 
 @csrf_exempt
@@ -134,3 +138,22 @@ def add_product_ajax(request):
         return HttpResponse(b"CREATED", status=201)
 
     return HttpResponseNotFound()
+
+@csrf_exempt
+def create_product_flutter(request):
+    if request.method == 'POST':
+        
+        data = json.loads(request.body)
+
+        new_product = Product.objects.create(
+            user = request.user,
+            name = data["name"],
+            price = int(data["price"]),
+            description = data["description"]
+        )
+
+        new_product.save()
+
+        return JsonResponse({"status": "success"}, status=200)
+    else:
+        return JsonResponse({"status": "error"}, status=401)
